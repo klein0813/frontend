@@ -166,9 +166,34 @@ loaders 列表 <https://www.webpackjs.com/loaders/>
 
 - `CSS 预处理器`
 
+> `插件（Plugins）`
+
+- DefinePlugin
+
+  - DefinePlugin 允许创建一个在编译时可以配置的全局常量
+  - 配置常量
+
+  ```js
+  new webpack.DefinePlugin({
+    PRODUCTION: JSON.stringify(true),
+    VERSION: JSON.stringify('5fa3b9'),
+    BROWSER_SUPPORTS_HTML5: true,
+    TWO: '1+1',
+    'typeof window': JSON.stringify('object'),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+  })
+  ```
+
+  - 使用常量
+
+  ```js
+  console.log('Running App version ' + VERSION)
+  if (!BROWSER_SUPPORTS_HTML5) require('html5shiv')
+  Warning
+  ```
+
 TODO
 
-> `插件（Plugins）`
 > 缓存
 
 vendor.js, 理论上可以来源于任何东西, 在 webpack 的使用场景而言，它通常存放那种不怎么改动的代码，第三方库之类的

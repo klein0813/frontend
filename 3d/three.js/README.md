@@ -12,3 +12,19 @@ Three.js 是基于原生 WebGL 封装运行的三维引擎
   - IOS 系统安全的纹理个数： 8 个 - 超出则浏览器会崩溃
 
 - [CanvasTexture](../../doc/three.js/纹理.md#CanvasTexture)
+
+## 音频
+
+```js
+// create an AudioListener and add it to the camera
+const listener = new THREE.AudioListener()
+camera.add(listener)
+// create a global audio source
+const sound = new THREE.Audio(listener)
+// load a sound and set it as the Audio object's buffer
+const audioLoader = new THREE.AudioLoader()
+audioLoader.load(BGM, (buffer) => {
+  sound.setBuffer(buffer)
+  sound.setLoop(false)
+})
+```

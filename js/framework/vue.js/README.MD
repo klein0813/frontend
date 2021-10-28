@@ -23,3 +23,9 @@ Vue 是一套用于构建用户界面的渐进式框架
 ## 自定义组件
 
 - [上拉加载更多](#5)
+
+## 初始化项目
+
+- vue2.0 + webpack
+  - npm install vue-cli -g
+  - vue init webpack myProject
