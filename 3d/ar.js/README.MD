@@ -1,14 +1,18 @@
 # AR.JS
 
+- <https://github.com/AR-js-org/AR.js>
+- <https://gitee.com/mirrors/AR.js>
+- <https://ar-js-org.github.io/AR.js-Docs/>
+- image recognition based on Artoolkit
+
 ## Types
 
-- Image Tracking
-- Location based AR
-- Marker tracking
+- [Image Tracking](#image-tracking)
+- [Location based AR](#location-based-ar)
+- [Marker tracking](#marker-tracking)
 
 ## Key points
 
-- Key points
 - Web-based : It is a pure web solution, so no installation required. Full javascript based on three.js + A-Frame + jsartoolkit5
 - Open Source
 - Standards : It works on any phone with webgl and webrtc
@@ -17,7 +21,7 @@
 
 - uses jsartoolkit5 for tracking
 - display augmented content with either three.js or A-Frame
-  
+
 ## Import the library
 
 - AR.js with Image Tracking + Location Based AR
@@ -38,8 +42,8 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar.js">
   ```
 
--  To import a specific version, can do that easily replacing master with the version tag, e.g.:
-  
+  - To import a specific version, can do that easily replacing master with the version tag, e.g.:
+
   ```html
   <script src="https://raw.githack.com/AR-js-org/AR.js/3.0.0/aframe/build/aframe-ar-nft.js">
   ```
@@ -59,3 +63,44 @@
 
 - [StackOverflow](https://stackoverflow.com/search?q=ar.js)
 - [Gitter chatroom](https://gitter.im/AR-js/Lobby)
+
+## Examples
+
+- <https://github.com/stemkoski/AR-Examples>
+
+## Image Tracking
+
+- Keyword: `Natural Feature Tracking`
+
+### Choose good images
+
+<https://github.com/Carnaux/NFT-Marker-Creator/wiki/Creating-good-markers>
+
+- Good dpi
+- More infomation included by image
+
+### Create Image Descriptors
+
+- Web - <https://carnaux.github.io/NFT-Marker-Creator/#/>
+- node version - `node app.js -i <path-to-the-img/image-name.jpg/png>`
+
+### Examples - NFT
+
+- <https://github.com/AR-js-org/AR.js/blob/master/aframe/examples/image-tracking/nft/index.html>
+- <https://github.com/AR-js-org/AR.js/blob/master/three.js/examples/nft.html>
+
+## Location based AR
+
+Location Based has been implemented only for A-Frame framework
+
+## Marker tracking
+
+Markers can be of three, different types:
+
+- Hiro: default, not very useful
+- Barcode: auto-generated markers, from matrix computations
+- Pattern: custom ones
+
+### Create Pattern Markers
+
+<https://ar-js-org.github.io/AR.js/three.js/examples/marker-training/examples/generator.html>
