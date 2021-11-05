@@ -1,13 +1,20 @@
-let renderer, camera, scene, stats, controls, clock;
+import { initHelper, onWindowResize, initScene } from './utils.js'
+
+const clock = new THREE.Clock()
+const { renderer, camera, scene } = initScene()
+camera.position.z = 10;
+const { stats, controls } = initHelper(dat, camera, renderer, Stats);
+window.onresize = onWindowResize(camera, renderer);
+
 const materials = [];
 let xFC; // 行方向移动距离
 let yFC; // 列方向移动距离
 let materialIndex = 0; // 将展示的材料索引
 const spriteInfos = [ // 纹理图信息
   // 第一张纹理图，图片路径，帧列数，帧总数
-  { img: '/threejs/textures/spriteshg_1.png', col: 3, total: 15 },
-  { img: '/threejs/textures/spriteshg_2.png', col: 3, total: 15 },
-  { img: '/threejs/textures/spriteshg_3.png', col: 1, total: 1 },
+  { img: '/frontend/threejs/textures/spriteshg_1.png', col: 3, total: 15 },
+  { img: '/frontend/threejs/textures/spriteshg_2.png', col: 3, total: 15 },
+  { img: '/frontend/threejs/textures/spriteshg_3.png', col: 1, total: 1 },
 ];
 let currentDisplayTime = 0; // 已展示时间
 let lastCount = 0; // 上一帧已展示时间
@@ -15,28 +22,15 @@ const fps = 0.025; // 1 秒 12 帧
 
 draw();
 
-function initScene () {
-  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  document.body.appendChild(renderer.domElement);
-
-  clock = new THREE.Clock();
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.z = 5;
-};
-
 function initModel () {
-  const originGeometry = new THREE.CylinderBufferGeometry(1, 1, Math.PI * 1, 16, 4, true, -Math.PI / 2, Math.PI);
-  originGeometry.name = 'hg';
+  const geometry = new THREE.CylinderBufferGeometry(1, 1, Math.PI * 1, 16, 4, true, -Math.PI / 2, Math.PI);
+  geometry.name = 'hg';
   const originMaterial = new THREE.MeshBasicMaterial();
   originMaterial.transparent = true;
   originMaterial.opacity = 0;
   const group = new THREE.Group();
 
   for (let i = 0, { length } = spriteInfos; i < length; i++) {
-    const geometry = new THREE.CylinderBufferGeometry(1, 1, Math.PI * 1, 16, 4, true, -Math.PI / 2, Math.PI);
     const material = originMaterial.clone();
     const { img, col, total } = spriteInfos[i];
     const texture = new THREE.TextureLoader().load(img);
@@ -61,25 +55,6 @@ function initModel () {
   }
 
   scene.add(group);
-}
-
-function initHelper () {
-  new dat.GUI();
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.minDistance = 1;
-  controls.maxDistance = 200;
-
-  const axisHelper = new THREE.AxisHelper(250);
-  scene.add(axisHelper);
-  
-  stats = new Stats();
-  document.body.appendChild(stats.dom);
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function render () {
@@ -118,11 +93,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-
 function draw() {
-  initScene();
-  initHelper();
   initModel();
   animate();
-  window.onresize = onWindowResize;
 }

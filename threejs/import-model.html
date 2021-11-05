@@ -1,0 +1,49 @@
+<!DOCTYPE html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Import 3D Model</title>
+    <style type="text/css">
+      html, body {
+        margin: 0;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
+      .import-list {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+      }
+      .import-item {
+        min-width: 200px;
+        height: 66px;
+        margin-top: 20px;
+        padding: 0 20px;
+        box-sizing: border-box;
+        text-align: center;
+        font-size: 28px;
+        line-height: 66px;
+        color: #fff;
+        background-image: radial-gradient(transparent 30%, white);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="import-list">
+      <div class="import-item" data-type="gltf">Import .gltf</div>
+      <div class="import-item" data-type="draco-gltf">Export .gltf(draco)</div>
+      <div class="import-item" data-type="glb">Import .glb</div>
+    </div>
+  </body>
+  <script src="https://cdn.bootcss.com/dat-gui/0.7.1/dat.gui.min.js"></script>
+  <script src="./libs/stats.min.js"></script>
+  <script src="./libs/three.min.js"></script>
+  <script src="./libs/OrbitControls.js"></script>
+  <script src="./libs/GLTFLoader.js"></script>
+  <script src="./libs/DRACOLoader.js"></script>
+  <script type="module" src="./js/import-model.js"></script>
+</html>
