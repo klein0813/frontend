@@ -43,6 +43,10 @@
 - 宽 \* 高 \* 位深度 \* (rgba)
 - 一张尺寸为 512 \* 256 的位深度为 8 的 rgb 图，写入 GPU 的缓存是 512 \* 256 \* 8 \* 3
 
+#### Texture Issues
+
+- 如果导入的模型纹理颜色不正确，可查看 texture.encoding 是否是 THREE.sRGBEncoding，threejs 中其默认值是 THREE.LinearEncoding
+
 #### Max size supported by device
 
 ```js
