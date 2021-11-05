@@ -1,0 +1,42 @@
+<!DOCTYPE html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Export 3D Model</title>
+    <style type="text/css">
+      html, body {
+        margin: 0;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
+
+      .btn {
+        position: absolute;
+        right: 30px;
+        top: 36px;
+        width: 200px;
+        height: 66px;
+        text-align: center;
+        font-size: 28px;
+        line-height: 66px;
+        color: #fff;
+        background-image: linear-gradient(45deg, white, transparent);
+      }
+      
+      #glb-btn {
+        top: 124px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="gltf-btn" class="btn">Export .gltf</div>
+    <div id="glb-btn" class="btn">Export .glb</div>
+  </body>
+  <script src="https://cdn.bootcss.com/dat-gui/0.7.1/dat.gui.min.js"></script>
+  <script src="./libs/stats.min.js"></script>
+  <script src="./libs/three.min.js"></script>
+  <script src="./libs/GLTFExporter.js"></script>
+  <script src="./libs/OrbitControls.js"></script>
+  <script type="module" src="./js/export-model.js"></script>
+</html>

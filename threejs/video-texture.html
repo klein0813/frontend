@@ -1,35 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>视频纹理</title>
-  <style type="text/css">
-    html, body {
-      margin: 0;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      overflow: hidden;
-    }
+<!DOCTYPE html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Video Texture</title>
+    <style type="text/css">
+      html, body {
+        margin: 0;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
 
-    #video{
-      position: fixed;
-      left:0;
-      bottom:0;
-    }
-  </style>
-</head>
+      #video{
+        position: fixed;
+        left:0;
+        bottom:0;
+      }
+    </style>
+  </head>
 
-<body>
-  <div style="color: #fff; text-align: center;">视频资源引自：https://blog.csdn.net/ithanmang/article/details/82593423</div>
-  <video id="video" autoplay controls >
-    <source src="/frontend/textures/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'>
-    <source src="/frontend/textures/sintel.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
-  </video>
-</body>
-<script src="https://cdn.bootcss.com/dat-gui/0.7.1/dat.gui.min.js"></script>
-<script src="./libs/stats.min.js"></script>
-<script src="./libs/three.min.js"></script>
-<script src="./libs/OrbitControls.js"></script>
-<script src="./libs/Detector.js"></script>
-<script type="module" src="./js/video-texture.js"></script>
+  <body>
+    <div style="color: #fff; text-align: center;">Video resources from：https://blog.csdn.net/ithanmang/article/details/82593423</div>
+    <video id="video" autoplay controls >
+      <source src="/frontend/threejs/textures/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'>
+      <source src="/frontend/threejs/textures/sintel.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
+    </video>
+  </body>
+  <script src="https://cdn.bootcss.com/dat-gui/0.7.1/dat.gui.min.js"></script>
+  <script src="./libs/stats.min.js"></script>
+  <script src="./libs/three.min.js"></script>
+  <script src="./libs/OrbitControls.js"></script>
+  <script src="./libs/Detector.js"></script>
+  <script type="module" src="./js/video-texture.js"></script>
 </html>
