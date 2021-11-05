@@ -30,8 +30,11 @@
 #### 纹理绘制特点
 
 - 图片数据的存储是从左上角开始的，即传入坐标 (0,0) 时，实际上会取到左上角坐标的值
+
   - 而现实视觉中坐标 (0,0) 对应的是左下角坐标
   - 可用 `FlipY` 翻转数据
+
+- 如果纹理不是 2 的幂次方，程序一者是不支持，一者是软件处理成 2 的幂次方
 
 #### 纹理大小计算
 
@@ -57,6 +60,8 @@ gl.getParameter(gl.MAX_TEXTURE_SIZE)
 
 - Basis Universal 加载示意图
   ![示意图](../assets/basis-universal.png)
+
+#### [THREE 纹理](../doc/three.js/纹理.md)
 
 ## Issues
 
