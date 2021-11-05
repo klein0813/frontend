@@ -46,6 +46,7 @@
 #### Texture Issues
 
 - 如果导入的模型纹理颜色不正确，可查看 texture.encoding 是否是 THREE.sRGBEncoding，threejs 中其默认值是 THREE.LinearEncoding
+- .basis 压缩纹理不会经过 cpu 转码，其对应图片的尺寸需要是 2 的 n 次幂
 
 #### Max size supported by device
 
