@@ -4,6 +4,8 @@ This project is for showing demos.
 
 ### Threejs
 
+#### Texture
+
 - [Video Texture](./threejs/video-texture.html)
 
 - [Gif Texture](./threejs/gif-texture.html)
@@ -14,6 +16,12 @@ This project is for showing demos.
 
   - Move textures for animation
   - Texture: Sprites image
+
+- [.Basis Texture](./threejs/basis-compress-texture.html)
+
+  - Image size is the power of tow that is required
+
+#### Model
 
 - [Import 3D model](./threejs/import-model.html)
 

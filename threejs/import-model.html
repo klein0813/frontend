@@ -1,6 +1,7 @@
 <!DOCTYPE html lang="en">
   <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Import 3D Model</title>
     <style type="text/css">
       html, body {
@@ -18,14 +19,14 @@
         width: 100vw;
       }
       .import-item {
-        min-width: 200px;
-        height: 66px;
+        min-width: 100px;
+        height: 36px;
         margin-top: 20px;
         padding: 0 20px;
         box-sizing: border-box;
         text-align: center;
-        font-size: 28px;
-        line-height: 66px;
+        font-size: 18px;
+        line-height: 36px;
         color: #fff;
         background-image: radial-gradient(transparent 30%, white);
       }
@@ -34,9 +35,9 @@
 
   <body>
     <div class="import-list">
-      <div class="import-item" data-type="gltf">Import .gltf</div>
-      <div class="import-item" data-type="draco-gltf">Export .gltf(draco)</div>
-      <div class="import-item" data-type="glb">Import .glb</div>
+      <div class="import-item" data-type="gltf">.gltf</div>
+      <div class="import-item" data-type="draco-gltf">.gltf(draco)</div>
+      <div class="import-item" data-type="glb">.glb</div>
     </div>
   </body>
   <script src="https://cdn.bootcss.com/dat-gui/0.7.1/dat.gui.min.js"></script>
