@@ -7,7 +7,11 @@
 
 - 渲染管线流程图
 
-![渲染管线流程图](../../assets/webgl-render-piplineflow-chart.png)
+- ![渲染管线流程图](../../assets/webgl-render-piplineflow-chart.png)
+
+  - 渲染管线的每一个环节都是一个带有某种功能的数字电路单元，只是有些支持可编程，有些不支持可编程，有些可以设置开启或关闭，有些完全不可设置
+  - 对于顶点、片元着色器是可以编程的，这两个处理器可以执行编译后的着色器语言
+  - GPU 深度检测功能是可设置的，默认是关闭的
 
 - Example
 
@@ -236,8 +240,11 @@
   ![Webgl Color Interpolation](../../assets/webgl_color_interpolation.png)
 
   - 线条插值效果
+
     ![Webgl Color Interpolation Line](../../assets/webgl_color_interpolation_line.jpg)
+
   - 三角形插值效果
+
     ![Webgl Color Interpolation Triangle](../../assets/webgl_color_interpolation_tra.jpg)
 
 - 颜色线性插值
@@ -281,5 +288,36 @@
 
   - 两个独立的着色器单元可以理解为两个具有串联关系的处理器
 
+  - 顶点位置、顶点颜色用一个缓冲区存储
+
+    ```js
+    const data = new Float32Array([
+      0.5, 0.5,      // 第一个顶点位置
+      1.0, 0.0, 0.0, // 第一个顶点颜色
+      -.5, -.5,      // 第二个顶点位置
+      0.0, 0.0, 1.0, // 第二个顶点颜色
+    ])
+    const buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.FLOAT, false, 0, 0)
+    // 4 表示 data 数组一个元素占据的字节数
+    // 倒数第二个参数 4*5 表示每 5 个元素是一个选择单元
+    // 第 2 个参数 2 表示从 5 元素组成的一个选择单元中选择前 2 个作为顶点位置数据
+    gl.vertexAttribPointer(aposLocation, 2, gl.FLOAT, false, 5 * 4, 0)
+    // 最后一个参数4*2表示5元素组成的一个选择单元中偏移2个元素
+    // 第2个参数3表示从5元素组成的一个选择单元中选择后三个作为顶点颜色数据
+    gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 5 * 4, 2 * 4)
+    ```
+
+  - 若将数据传入显卡缓冲区(gl.bufferData)，且未绑定新的缓冲区时，当前数据会覆盖上一次传入的数据
+
 - attribute 限制变量于 CPU 中可通过 gl.getAttribLocation() 获取
 - varying 限制变量沿着渲染管线在片元着色器中可使用
+
+### 立方体（每个面一种颜色）
+
+- GPU 开始绘制图形，默认的规则是后生成的像素覆盖前面生成的像素
+- x，y 坐标对应的就是显示器平面，z 值就是深度信息
+- `gl.enable()`：是 WebGL 的方法，开启某项功能
+- `gl.DEPTH_TEST`：表示深度功能
+- 36 个顶点位置，36 个顶点颜色
