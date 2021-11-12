@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+  <head>
+    <title>Color Interpolation</title>
+  </head>
+  <body>
+    <canvas id="webgl" width="500" height="500" style="background-color: grey;"></canvas>
+    <script>
+      const canvas = document.getElementById('webgl');
+      const gl = canvas.getContext('webgl');
+
+      const vertexShaderSource = `
+        attribute vec4 apos;
+        attribute vec4 a_color;
+        varying vec4 v_color;
+        void main () {
+          gl_Position = apos;
+          v_color = a_color;
+        }
+      `;
+      const fragShaderSource = `
+        precision lowp float;
+        varying vec4 v_color;
+        void main () {
+          gl_FragColor = v_color;
+        }
+      `;
+
+      const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+      const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+      gl.shaderSource(vertexShader, vertexShaderSource);
+      gl.shaderSource(fragmentShader, fragShaderSource);
+      gl.compileShader(vertexShader);
+      gl.compileShader(fragmentShader);
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      gl.useProgram(program);
+
+      const vertexData = new Float32Array([0.5, 0.5, -.5, -.5, 0.5, -.5, -.5, 0.5, 0.5, 0.5, -.5, -.5]);
+      const vertexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
+      const aposLocation = gl.getAttribLocation(program, 'apos');
+      gl.vertexAttribPointer(aposLocation, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(aposLocation);
+
+      let colorData = new Float32Array([
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0,
+      ]);
+      // const colorData = new Float32Array([1.0, 0.0, 0.0]);
+      const colorBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
+      const colorLocation = gl.getAttribLocation(program, 'a_color');
+      gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(colorLocation);
+
+      gl.drawArrays(gl.LINE_LOOP, 0, 3);
+      setTimeout(() => {
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        const indexesData = new Uint8Array([
+          0, 1, 2,
+          0, 1, 3,
+        ]);
+        const indexesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexesBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexesData, gl.STATIC_DRAW);
+        setTimeout(() => {
+          colorData = new Float32Array([
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+          ]);
+          gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
+          gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
+          gl.drawElements(gl.TRIANGLES, 3, gl.UNSIGNED_BYTE, 0);
+          gl.drawElements(gl.TRIANGLES, 3, gl.UNSIGNED_BYTE, 3);
+          
+          const data = new Float32Array([
+            0.5, 0.5,
+            1.0, 0.0, 0.0,
+            -.5, -.5,
+            0.0, 0.0, 1.0,
+          ]);
+          const buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+          gl.vertexAttribPointer(aposLocation, 2, gl.FLOAT, false, 5 * 4, 0);
+          gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 5 * 4, 2 * 4);
+          setTimeout(() => {
+            gl.drawArrays(gl.LINES, 0, 2);
+          }, 1000)
+        }, 1000);
+      }, 1000);
+    </script>
+  </body>
+</html>
