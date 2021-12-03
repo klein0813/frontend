@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+  <head>
+    <title>Point Line Animation</title>
+    <script src="../libs/baidu_tongji.js"></script>
+    <style>
+      html, body {
+        padding: 0;
+        margin: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="webgl" width="500" height="500" style="background-color: grey;"></canvas>
+    <script>
+      const canvas = document.getElementById('webgl');
+      canvas.width = document.documentElement.offsetWidth;
+      canvas.height = document.documentElement.offsetHeight;
+      const gl = canvas.getContext('webgl');
+      const vertexShaderSource = `
+        varying vec4 v_color;
+        attribute vec4 apos;
+        attribute float a_alpha;
+        uniform vec3 u_fromColor;
+        uniform vec3 u_toColor;
+        uniform float u_pi;
+        uniform float u_time;
+
+        void main () {
+          gl_Position = apos;
+          gl_PointSize = 5.0;
+          if (abs(gl_Position.x) > 0.9999 && abs(gl_Position.y) > 0.9999) {
+            vec3 color = (u_fromColor - u_toColor + 1.0) * u_time + u_toColor;
+            v_color = vec4(color / 255.0, 1.0);
+          } else if (a_alpha > 1.0) {
+            v_color = vec4(1.0, 1.0, 1.0, 0.3);
+          } else {
+            v_color = vec4(1.0, 1.0, 1.0, 0.3);
+          }
+        }
+      `;
+      const fragShaderSource = `
+        precision lowp float;
+        varying vec4 v_color;
+
+        void main () {
+          gl_FragColor = v_color;
+        }
+      `;
+      const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+      const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+      gl.shaderSource(vertexShader, vertexShaderSource);
+      gl.shaderSource(fragmentShader, fragShaderSource);
+      gl.compileShader(vertexShader);
+      gl.compileShader(fragmentShader);
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      gl.useProgram(program);
+
+      const aposData = new Float32Array([
+        1, 1,
+        -1, 1,
+        -1, -1,
+        1, -1,
+        1, 1,
+        -1, -1,
+        ...new Array((10 + 90) * 2).fill(0)]);
+      console.log('aposData', aposData)
+      const aposAttrib = gl.getAttribLocation(program, 'apos');
+      const aposBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, aposBuffer);
+      gl.vertexAttribPointer(aposAttrib, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(aposAttrib);
+
+      const alphaAttrib = gl.getAttribLocation(program, 'a_alpha');
+      const alphaABuffer = gl.createBuffer();
+      const alphaData = new Float32Array([ 2, 2, 2, 2, 2, 2,  ...new Array((10 + 90) * 1).fill(0)]);
+      gl.bindBuffer(gl.ARRAY_BUFFER, alphaABuffer);
+      gl.vertexAttribPointer(alphaAttrib, 1, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(alphaAttrib);
+
+      const fromColorUniform = gl.getUniformLocation(program, 'u_fromColor');
+      const toColorUniform = gl.getUniformLocation(program, 'u_toColor');
+      const piUniform = gl.getUniformLocation(program, 'u_pi');
+      const timeUniform = gl.getUniformLocation(program, 'u_time');
+      gl.uniform3f(fromColorUniform, 10, 25, 100);
+      gl.uniform3f(toColorUniform, 25, 50, 150);
+      gl.uniform1f(piUniform, Math.PI);
+      
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const pointDatas = new Float32Array(30); // 10 个点 * 3
+      for (let i = 0; i < 30; i += 3) {
+        pointDatas[i] = Math.floor(Math.random() * (cw - 0 + 1)) + 0;
+        pointDatas[i + 1] = Math.floor(Math.random() * (ch - 0 + 1)) + 0;
+        pointDatas[i + 2] = Math.random() * (Math.PI * 2 - 0 + 1) + 0;
+      }
+      let t0 = Date.now();
+      let dt = 0;
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+      draw()
+      function draw () {
+        let count = 12 + 20;
+        for (let i = 0, { length } = pointDatas; i < length; i = i + 3) {
+          pointDatas[i] = pointDatas[i] + Math.cos(pointDatas[i + 2]) * 20 * (dt / 1000.0);
+					pointDatas[i + 1] = pointDatas[i + 1] + Math.sin(pointDatas[i + 2]) * 20 * (dt / 1000.0);
+
+          if (pointDatas[i] < 0) {
+            pointDatas[i] = cw + (pointDatas[i] % cw);
+          } else if (pointDatas[i] > cw) {
+            pointDatas[i] = pointDatas[i] % cw;
+          }
+
+          if (pointDatas[i + 1] < 0) {
+            pointDatas[i + 1] = ch + (pointDatas[i + 1] % ch);
+          } else if (pointDatas[i + 1] > ch) {
+            pointDatas[i + 1] = pointDatas[i + 1] % ch;
+          }
+          aposData[12 + i / 3 * 2] = pointDatas[i] * 2 / cw - 1;
+          aposData[12 + i / 3 * 2 + 1] = pointDatas[i + 1] * 2 / ch - 1;
+        }
+        for (let i = 0, { length } = pointDatas; i < length; i = i + 3) {
+          for (let j = 0; j < length; j = j + 3) {
+            if (j === i) {
+              continue;
+            }
+            const dx = Math.abs(pointDatas[i] - pointDatas[j]);
+            const dy = Math.abs(pointDatas[i + 1] - pointDatas[j + 1]);
+            const d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+
+            let alpha = 0;
+
+						if (d <= 300) {
+							alpha = 0.3 - ((0.3 * d) / 200);
+							alpha = alpha < 0 ? alpha : 0;
+						}
+						aposData[count + 0] = aposData[12 + i / 3 * 2];
+						aposData[count + 1] = aposData[12 + i / 3 * 2 + 1];
+						aposData[count + 2] = aposData[12 + j / 3 * 2];
+						aposData[count + 3] = aposData[12 + j / 3 * 2 + 1];
+						alphaData[count / 2] = alpha;
+						count += 4;
+          }
+        }
+        
+        console.log(aposData)
+
+        // requestAnimationFrame(draw);
+        gl.uniform1f(timeUniform, ((Math.sin(Math.PI * 2 * Date.now() / 4000 - Math.PI / 2) + 1) / 2));
+        gl.bufferData(gl.ARRAY_BUFFER, aposData, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, alphaData, gl.STATIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.drawArrays(gl.LINES, 16, 90);
+        gl.drawArrays(gl.POINTS, 6, 10);
+
+        dt = Date.now() - t0;
+				t0 = Date.now();
+      }
+    </script>
+  </body>
+</html>

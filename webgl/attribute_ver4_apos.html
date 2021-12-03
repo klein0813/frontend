@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+  <head>
+    <title>Draw a point by webgl</title>
+    <script src="../libs/baidu_tongji.js"></script>
+  </head>
+  <body>
+    <canvas id="webgl" width="500" height="500" style="background-color: blue;"></canvas>
+    <script>
+      const canvas = document.getElementById('webgl'); // 获取 canvas
+      const gl = canvas.getContext('webgl'); // 获取 webgl
+
+      // 顶点着色器源码
+      const vertexShaderSource = `
+        attribute vec4 apos;
+        void main () {
+          gl_PointSize = 20.00;
+          gl_Position = apos;
+        }
+      `;
+      // 片元着色器源码
+      const fragShaderSource = `
+        void main () {
+          gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        }
+      `;
+
+      // 初始化着色器
+      // 创建着色器对象
+      const vertexShader = gl.createShader(gl.VERTEX_SHADER); // 创建顶点着色器对象
+      const fragShader = gl.createShader(gl.FRAGMENT_SHADER); // 创建片元着色器
+      // 引入着色器源码
+      gl.shaderSource(vertexShader, vertexShaderSource); // 向顶点着色器引入源码
+      gl.shaderSource(fragShader, fragShaderSource); // 向片元着色器引入源码
+      // 编译着色器
+      gl.compileShader(vertexShader); // 编译顶点着色器
+      gl.compileShader(fragShader); // 编译片元着色器
+      // 创建程序对象程序对象
+      const program = gl.createProgram();
+      // 附着着色器到程序对象
+      gl.attachShader(program, vertexShader); // 附着顶点着色器到程序对象
+      gl.attachShader(program, fragShader); // 附着片元着色器到程序对象
+      // 链接程序对象
+      gl.linkProgram(program);
+      // 使用程序对象
+      gl.useProgram(program);
+
+      // 获取顶点着色器的位置变量 apos
+      const aposLocation = gl.getAttribLocation(program, 'apos');
+      const data = new Float32Array([0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5]); // 顶点数据
+      // 创建缓冲区对象
+      const buffer = gl.createBuffer();
+      // 绑定缓冲区对象，激活缓冲区对象
+      // bindBuffer(target: number, buffer: WebGLBuffer): void
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+      // 顶点数组 data 数据传入缓冲区
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      // 缓冲区内的数据按照规律传递给位置变量 apos
+      // (index: number, size: number, type: number, normalized: boolean, stride: number, offset: number): void
+      gl.vertexAttribPointer(aposLocation, 2, gl.FLOAT, false, 0, 0)
+      // 允许数据传递
+      gl.enableVertexAttribArray(aposLocation);
+
+      // 开始绘制，显示器显示结果
+      gl.drawArrays(gl.TRIANGLES, 0, 4);
+    </script>
+  </body>
+</html>
