@@ -212,7 +212,7 @@
 - 给每个点标记索引(如上一节图中标示)，再借助索引构建立方体，已解决数据重复问题
 - `gl.drawElements` - 通过一个索引数组访问使用顶点数组中的顶点数据
 
-  ```js
+  ```t
   const indexesData = new Uint8Array([
     0, 1, 2, 3, // LINE_LOOP, 绘制矩形
     4, 5, 6, 7, // LINE_LOOP, 绘制矩形
@@ -290,7 +290,7 @@
 
   - 顶点位置、顶点颜色用一个缓冲区存储
 
-    ```js
+    ```t
     const data = new Float32Array([
       0.5, 0.5,      // 第一个顶点位置
       1.0, 0.0, 0.0, // 第一个顶点颜色
@@ -320,6 +320,8 @@
 - x，y 坐标对应的就是显示器平面，z 值就是深度信息
 - `gl.enable()`：是 WebGL 的方法，开启某项功能
 - `gl.DEPTH_TEST`：表示深度功能
+  - 默认后面的绘制会覆盖前面的绘制
+  - 开启深度测试后，z 小会在上面(和 css 中 z-index 正相反)
 - 36 个顶点位置，36 个顶点颜色
 
 ### WebGL 光照渲染立方体
@@ -360,4 +362,113 @@
 
 #### 添加平行光
 
-#### 添加点光源
+- 光的位置
+
+```js
+uniform vec3 u_lightPosition; // 接收光的位置
+...
+const lightPositionUniform = gl.getUniformLocation(program, 'u_lightPosition'); // 获取光位置变量
+gl.uniform3f(lightPositionUniform, 0, 0, -1); // 传值给光位置变量
+```
+
+- 光的颜色
+
+```js
+uniform vec3 u_lightColor; // 接收光的颜色
+...
+const lightColorUniform = getUniformLocation('u_lightColor'); // 获取光颜色变量
+gl.uniform3f(program, lightColorUniform); // 传值给光颜色变量
+```
+
+- 光的类型：点光源
+- 获取反射光的颜色
+
+```glsl[vectexShader]
+vec3 lightDirection = normalize(gl_Position.xyz - u_lightPosition);
+vec3 normal = normalize(a_normal);
+float dotcos = max(dot(lightDirection, normal), 0);
+vec3 reflectedLight = u_lightColor * a_color.rgb * dotcos;
+v_color = vec4(reflectedLight, a_color.a);
+```
+
+- 参与运算的值需要是同一类型数据
+
+### 立方体旋转动画
+
+```t
+function draw () {
+  angle += 0.01;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const mx = new Float32Array([
+    1, 0, 0, 0,
+    0, cos, -sin, 0,
+    0, sin, cos, 0,
+    0, 0, 0, 1
+  ]);
+  requestAnimationFrame(draw);
+  gl.uniformMatrix4fv(mxUniform, false, mx);
+  gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+```
+
+### 纹理贴图
+
+- 图片称为纹理图像，图片上的一个像素称为纹素，一个纹素就是一个 RGB 或 RGBA 值
+- 把整个图片看成一个平面区域，用一个二维 UV 坐标系可以描述每一个纹素的位置
+
+![纹理坐标映射](../../assets/webgl_texture_coord_mapping.png)
+
+- 顶点着色器
+  - 顶点数据在顶点光栅化的时候会进行插值计算
+
+```glsl
+attribute vec4 apos;
+attribute vec2 a_texCoord; // 纹理坐标
+varying vec2 v_texCoord; // 插值后纹理坐标
+
+void main () {
+  gl_Position = apos;
+  v_texCoord = a_texCoord; // 纹理坐标插值计算
+}
+```
+
+- 片元着色器
+
+```glsl
+precision highp float;
+varying vec2 v_texCoord;
+uniform sampler2D u_sampler;
+
+void main () {
+  gl_FragColor = texture2D(u_sampler, v_texCoord);
+}
+```
+
+- 纹理图像数据传递
+
+```js
+const textureBuffer = gl.createTexture() // 创建纹理图像缓冲区
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true) //纹理图片上下反转
+gl.activeTexture(gl.TEXTURE0) //激活0号纹理单元TEXTURE0
+gl.bindTexture(gl.TEXTURE_2D, textureBuffer) // 将纹理缓冲区绑定到纹理单元的 TEXTURE_2D部分
+// 设置纹理贴图填充方式(纹理贴图像素尺寸大于顶点绘制区域像素尺寸)
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+// 设置纹理贴图填充方式(纹理贴图像素尺寸小于顶点绘制区域像素尺寸)
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINTER)
+//将图像写入纹理缓冲区，设置纹素格式，jpg格式对应gl.RGB
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image)
+const samplerUniform = gl.getUniformLocation(program, 'u_sampler')
+gl.uniform1i(samplerUniform, 0) // 纹理缓冲区单元TEXTURE0中的颜色数据传入片元着色器
+```
+
+## 初级
+
+### WebGL 纹理单元
+
+> <https://webglfundamentals.org/webgl/lessons/zh_cn/webgl-texture-units.html>
+
+- 纹理单元是引用纹理的 全局数组，有 TEXTURE0，TEXTURE1 等很多个
+- 查询支持的数量：`gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)`
+- 查询顶点着色器支持的数量：`gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS)`
+- 查询片元着色器支持的数量：`gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)`
