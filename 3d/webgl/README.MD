@@ -462,6 +462,25 @@ const samplerUniform = gl.getUniformLocation(program, 'u_sampler')
 gl.uniform1i(samplerUniform, 0) // 纹理缓冲区单元TEXTURE0中的颜色数据传入片元着色器
 ```
 
+### 彩色图转灰度图
+
+- 灰度图颜色只有黑白两色，或者说灰度图颜色分量只有光亮度这一个分量，黑色相当于没有光照，白色相当于最大光照强度
+
+  `亮度 = 0.299 x R + 0.587 x G + 0.114 x B`
+
+  ```glsl
+    vec4 color = texture2D(u_sampler, v_texCoord);
+    gl_FragColor = vec4(color.r * 0.299, color.g * 0.587, color.b * 0.114, 1.0);
+  ```
+
+### 切换着色器程序(立方体添加局部贴图)
+
+- 编写两组着色器程序，一组纹理映射的顶点、片元着色器程序，一组立方体的顶点、片元着色器程序
+- gl.useProgram 执行后会立即配置GPU的着色器单元
+- 执行顺序
+  - 配置初始化 GPU 渲染管线的着色器单元
+  - 把缓冲区中的顶点数据关联到着色器变量的地址
+
 ## 初级
 
 ### WebGL 纹理单元
@@ -472,3 +491,5 @@ gl.uniform1i(samplerUniform, 0) // 纹理缓冲区单元TEXTURE0中的颜色数�
 - 查询支持的数量：`gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)`
 - 查询顶点着色器支持的数量：`gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS)`
 - 查询片元着色器支持的数量：`gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)`
+
+### 给纹理添加光照
