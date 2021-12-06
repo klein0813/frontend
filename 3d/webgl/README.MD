@@ -476,10 +476,77 @@ gl.uniform1i(samplerUniform, 0) // 纹理缓冲区单元TEXTURE0中的颜色数�
 ### 切换着色器程序(立方体添加局部贴图)
 
 - 编写两组着色器程序，一组纹理映射的顶点、片元着色器程序，一组立方体的顶点、片元着色器程序
-- gl.useProgram 执行后会立即配置GPU的着色器单元
+- gl.useProgram 执行后会立即配置 GPU 的着色器单元
 - 执行顺序
+
   - 配置初始化 GPU 渲染管线的着色器单元
   - 把缓冲区中的顶点数据关联到着色器变量的地址
+
+```js
+gl.useProgram(program1)
+vertexBuffer(data, cubePosition, 3)
+// ...
+gl.useProgram(program2)
+vertexBuffer(data, texturePosition, 3)
+```
+
+### α 融合（alpha blending）
+
+- 渲染管线的 α 融合单元：gl.BLEND
+- 开启、设置 α 融合
+
+```js
+/**
+ * 渲染管线α融合功能单元配置
+ **/
+gl.enable(gl.BLEND)
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) // 源颜色和目标颜色融合的计算方法
+```
+
+- gl.blendFunc() 的第一个参数是源颜色的系数，第二个参数是目标颜色的系数，两组像素值乘以各自系数后然后相加得到融合后的像素值，覆盖原来的像素值
+
+```txt
+R3 = R1 x 参数1 + R2 x 参数2
+R3 = G1 x 参数1 + G2 x 参数2
+R3 = B1 x 参数1 + B2 x 参数2
+```
+
+#### 深度测试与 α 融合
+
+- 立方体的顶点数据经过顶点着色器、光栅、片元着色器等渲染管线单元处理后会得到立方体每个面的片元数据(包含 RGB 像素值，还有透明度分量 A，片元的深度值 Z，屏幕坐标(X,Y)等数据)
+
+- 屏幕坐标(X,Y)
+
+  - 不需要开发者管理控制，浏览器的 WebGL 图形系统会自动管理，每个 canvas 画布都有一个默认的帧缓存， 帧缓存颜色缓冲区中的数据会被图形显示系统扫描显示在帧缓存对应的 canvas 画布上
+
+- 片元的深度值 Z
+
+  - 片元的深度值 Z 反应的是一个片元距离观察位置的远近，两个顶点之间的片元深度值 Z 来源与两个顶点 z 坐标值的插值计算，所有片元的深度值 Z 都存储在帧缓存的深度缓冲区中
+
+  ![深度测试](../../assets/webgl_depth_test.png)
+
+- α 融合单元与深度测试单元结合使用实现同时绘制不透明和透明的物体
+
+  - 开启 α 融合单元的同时开启了深度测试单元，那么 α 融合单元就不再起作用， 深度测试单元是比较先后绘制两个片元的深度值决定取舍，α 融合单元是把先后绘制的两个片元 RGB 值分别乘以一个系数得到新的 RGB 值，覆盖替换原来颜色缓冲区中同屏幕坐标的 RGB 值
+
+  ![深度测试和融合](../../assets/webgl_depth_test&blend.png)
+
+  - 在深度测试单元开启的情况下绘制不透明立方体
+  - 在 α 融合单元开启的情况下，执行 gl.depthMask(false);代码关闭深度缓冲区
+
+```js
+/**
+ * 开启深度测试并设置颜色融合单元
+ **/
+gl.enable(gl.DEPTH_TEST)
+gl.enable(gl.BLEND)
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+// ...
+gl.drawArrays(gl.TRIANGLES, 36, 36) //绘制不透明的立方体
+// ...
+gl.depthMask(false) //关闭深度缓冲区
+gl.drawArrays(gl.TRIANGLES, 0, 36) //绘制透明的立方体
+```
 
 ## 初级
 
@@ -493,3 +560,5 @@ gl.uniform1i(samplerUniform, 0) // 纹理缓冲区单元TEXTURE0中的颜色数�
 - 查询片元着色器支持的数量：`gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)`
 
 ### 给纹理添加光照
+
+## GLSL ES
