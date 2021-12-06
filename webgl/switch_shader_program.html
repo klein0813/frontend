@@ -8,6 +8,7 @@
     <script>
       const canvas = document.getElementById('canvas');
       const gl = canvas.getContext('webgl');
+      gl.clear(gl.COLOR_BUFFER_BIT);
       const cubeVertexShaderSource = `
         varying vec4 v_color;
         attribute vec4 apos;
@@ -127,6 +128,7 @@
       gl.useProgram(texProgram);
       const texAposAttrib = gl.getAttribLocation(texProgram, 'apos');
       const texCoordAttrib = gl.getAttribLocation(texProgram, 'a_texCoord');
+      const samplerUniform = gl.getUniformLocation(texProgram,'a_sampler');
       const texRMX = gl.getUniformLocation(texProgram, 'rmx');
       const texRMY = gl.getUniformLocation(texProgram, 'rmy');
       vertexBuffer(texAposAttrib, texAposData, 3);
@@ -145,7 +147,7 @@
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-        gl.enable(gl.DEPTH_TEST);
+        gl.uniform1i(samplerUniform, 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
     </script>
