@@ -13,151 +13,187 @@
   <body>
     <canvas id="webgl" width="500" height="500" style="background-color: grey;"></canvas>
     <script>
-      const canvas = document.getElementById('webgl');
-      canvas.width = document.documentElement.offsetWidth;
-      canvas.height = document.documentElement.offsetHeight;
-      const gl = canvas.getContext('webgl');
-      const vertexShaderSource = `
-        varying vec4 v_color;
-        attribute vec4 apos;
-        attribute float a_alpha;
-        uniform vec3 u_fromColor;
-        uniform vec3 u_toColor;
-        uniform float u_pi;
-        uniform float u_time;
+      const params = {
+        id: 'webgl',
+        width: document.documentElement.scrollWidth,
+        height: window.innerHeight,
+        backgroundFrom: [10, 25, 100],
+        backgroundTo: [25, 50, 150],
+        backgroundDuration: 4000,
+        number: window.hasOwnProperty('orientation') ? 30 : 100,
+        speed: 20
+      };
+      const canvas = document.getElementById(params.id)
 
-        void main () {
-          gl_Position = apos;
-          if (abs(gl_Position.x) > 0.9999 && abs(gl_Position.y) > 0.9999) {
-            vec3 color = (u_fromColor - u_toColor + 1.0) * u_time + u_toColor;
-            v_color = vec4(color / 255.0, 1.0);
-          } else if (a_alpha > 1.0) {
-            gl_PointSize = 2.0;
-            v_color = vec4(1.0, 1.0, 1.0, 3.0);
-          } else {
-            v_color = vec4(1.0, 1.0, 1.0, a_alpha);
+      if (canvas?.getContext('webgl') || canvas.getContext('experimental-webgl')) {
+        lineAnimation(params, canvas);
+      }
+
+      function lineAnimation (params, canvas) {
+        const vertexShaderSource = `
+          varying vec4 v_color;
+          attribute vec4 apos;
+          attribute float a_alpha;
+          uniform vec3 u_fromColor;
+          uniform vec3 u_toColor;
+          uniform float u_time;
+
+          void main () {
+            gl_Position = apos;
+            if (abs(gl_Position.x) > 0.9999 && abs(gl_Position.y) > 0.9999) {
+              vec3 color = (u_fromColor - u_toColor + 1.0) * u_time + u_toColor;
+              v_color = vec4(color / 255.0, 1.0);
+            } else if (a_alpha > 1.0) {
+            gl_PointSize = 3.0;
+              v_color = vec4(1.0, 1.0, 1.0, 3.0);
+            } else {
+              v_color = vec4(1.0, 1.0, 1.0, a_alpha);
+            }
           }
-        }
-      `;
-      const fragShaderSource = `
-        precision lowp float;
-        varying vec4 v_color;
+        `;
+        const fragShaderSource = `
+          precision lowp float;
+          varying vec4 v_color;
 
-        void main () {
-          if (v_color.a > 2.0) {
+          void main () {
+            if (v_color.a > 2.0) {
             float r = distance(gl_PointCoord, vec2(0.5, 0.5));
             if (r > 0.5) {
               discard;
             }
             gl_FragColor = vec4(vec3(v_color), 0.3);
-          } else {
+            } else {
             gl_FragColor = v_color;
+            }
           }
-        }
-      `;
-      const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-      const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-      gl.shaderSource(vertexShader, vertexShaderSource);
-      gl.shaderSource(fragmentShader, fragShaderSource);
-      gl.compileShader(vertexShader);
-      gl.compileShader(fragmentShader);
-      const program = gl.createProgram();
-      gl.attachShader(program, vertexShader);
-      gl.attachShader(program, fragmentShader);
-      gl.linkProgram(program);
-      gl.useProgram(program);
+        `;
 
-      const nodeCount = 50;
-      const aposData = new Float32Array([
-        1, 1, 2,
-        -1, 1, 2,
-        -1, -1, 2,
-        1, -1, 2, 
-        1, 1, 2,
-        -1, -1, 2,
-        ...new Array((nodeCount + nodeCount * (nodeCount - 1)) * 3).fill(2)]);
-      console.log('aposData', aposData)
-      const aposAttrib = gl.getAttribLocation(program, 'apos');
-      const aposBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, aposBuffer);
-      gl.vertexAttribPointer(aposAttrib, 2, gl.FLOAT, false, 4 * 3, 0);
-      gl.enableVertexAttribArray(aposAttrib);
+        const nodeCount = params.number;
+        const aposData = new Float32Array([
+          1, 1, 2,
+          -1, 1, 2,
+          -1, -1, 2,
+          1, -1, 2, 
+          1, 1, 2,
+          -1, -1, 2,
+          ...new Array((nodeCount + nodeCount * (nodeCount - 1)) * 3).fill(2)]);
 
-      const alphaAttrib = gl.getAttribLocation(program, 'a_alpha');
-      gl.vertexAttribPointer(alphaAttrib, 1, gl.FLOAT, false, 4 * 3, 4 * 2);
-      gl.enableVertexAttribArray(alphaAttrib);
+        let t0 = Date.now();
+        let dt = 0;
+        const initCount = 6 * 3 + nodeCount * 3;
+        const pointDatas = new Float32Array(nodeCount * 3);
+        let cw;
+        let ch;
 
-      const fromColorUniform = gl.getUniformLocation(program, 'u_fromColor');
-      const toColorUniform = gl.getUniformLocation(program, 'u_toColor');
-      const piUniform = gl.getUniformLocation(program, 'u_pi');
-      const timeUniform = gl.getUniformLocation(program, 'u_time');
-      gl.uniform3f(fromColorUniform, 10, 25, 100);
-      gl.uniform3f(toColorUniform, 25, 50, 150);
-      gl.uniform1f(piUniform, Math.PI);
-      
-      const cw = canvas.width;
-      const ch = canvas.height;
-      const pointDatas = new Float32Array(nodeCount * 3); // 10 个点 * 3
-      for (let i = 0; i < nodeCount * 3; i += 3) {
-        pointDatas[i] = Math.floor(Math.random() * (cw - 0 + 1)) + 0;
-        pointDatas[i + 1] = Math.floor(Math.random() * (ch - 0 + 1)) + 0;
-        pointDatas[i + 2] = Math.random() * (Math.PI * 2 - 0 + 1) + 0;
-      }
-      let t0 = Date.now();
-      let dt = 0;
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-      const initCount = 6 * 3 + nodeCount * 3;
+        window[window.addEventListener ? 'addEventListener' : 'attachEvent']
+        (window.addEventListener ? 'load' : 'onload', function () {
+          let gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          resetSize(params.width, params.height);
+          for (let i = 0; i < nodeCount * 3; i += 3) {
+            pointDatas[i] = Math.floor(Math.random() * (cw - 0 + 1)) + 0;
+            pointDatas[i + 1] = Math.floor(Math.random() * (ch - 0 + 1)) + 0;
+            pointDatas[i + 2] = Math.random() * (Math.PI * 2 - 0 + 1) + 0;
+          }
+          const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+          const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+          gl.shaderSource(vertexShader, vertexShaderSource);
+          gl.shaderSource(fragmentShader, fragShaderSource);
+          gl.compileShader(vertexShader);
+          gl.compileShader(fragmentShader);
+          const program = gl.createProgram();
+          gl.attachShader(program, vertexShader);
+          gl.attachShader(program, fragmentShader);
+          gl.linkProgram(program);
+          gl.useProgram(program);
 
-      draw()
-      function draw () {
-        let count = initCount;
-        for (let i = 0, { length } = pointDatas; i < length; i = i + 3) {
-          pointDatas[i] = pointDatas[i] + Math.cos(pointDatas[i + 2]) * 20 * (dt / 1000.0);
-					pointDatas[i + 1] = pointDatas[i + 1] + Math.sin(pointDatas[i + 2]) * 20 * (dt / 1000.0);
+          const aposAttrib = gl.getAttribLocation(program, 'apos');
+          const aposBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, aposBuffer);
+          gl.vertexAttribPointer(aposAttrib, 2, gl.FLOAT, false, 4 * 3, 0);
+          gl.enableVertexAttribArray(aposAttrib);
 
-          if (pointDatas[i] < 0) {
-            pointDatas[i] = cw + (pointDatas[i] % cw);
-          } else if (pointDatas[i] > cw) {
-            pointDatas[i] = pointDatas[i] % cw;
+          const alphaAttrib = gl.getAttribLocation(program, 'a_alpha');
+          gl.vertexAttribPointer(alphaAttrib, 1, gl.FLOAT, false, 4 * 3, 4 * 2);
+          gl.enableVertexAttribArray(alphaAttrib);
+
+          const fromColorUniform = gl.getUniformLocation(program, 'u_fromColor');
+          const toColorUniform = gl.getUniformLocation(program, 'u_toColor');
+          const timeUniform = gl.getUniformLocation(program, 'u_time');
+          gl.uniform3f(fromColorUniform, ...params.backgroundFrom);
+          gl.uniform3f(toColorUniform, ...params.backgroundTo);
+
+          gl.enable(gl.DEPTH_TEST); 
+          gl.depthFunc(gl.LEQUAL); 
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+          draw()
+
+          window.onresize = function () {
+            resetSize(document.documentElement.scrollWidth, window.innerHeight);
+          };
+
+          function resetSize (width, height) {
+            // const devicePixelRatio = window.devicePixelRatio || 1;
+            canvas.width = width;
+            canvas.height = height;
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+            cw = canvas.width;
+            ch = canvas.height;
           }
 
-          if (pointDatas[i + 1] < 0) {
-            pointDatas[i + 1] = ch + (pointDatas[i + 1] % ch);
-          } else if (pointDatas[i + 1] > ch) {
-            pointDatas[i + 1] = pointDatas[i + 1] % ch;
+          function draw () {
+            let count = initCount;
+            for (let i = 0, { length } = pointDatas; i < length; i = i + 3) {
+              pointDatas[i] = pointDatas[i] + Math.cos(pointDatas[i + 2]) * params.speed * (dt / 1000.0);
+              pointDatas[i + 1] = pointDatas[i + 1] + Math.sin(pointDatas[i + 2]) * params.speed * (dt / 1000.0);
+
+              if (pointDatas[i] < 0) {
+                pointDatas[i] = cw + (pointDatas[i] % cw);
+              } else if (pointDatas[i] > cw) {
+                pointDatas[i] = pointDatas[i] % cw;
+              }
+
+              if (pointDatas[i + 1] < 0) {
+                pointDatas[i + 1] = ch + (pointDatas[i + 1] % ch);
+              } else if (pointDatas[i + 1] > ch) {
+                pointDatas[i + 1] = pointDatas[i + 1] % ch;
+              }
+              aposData[6 * 3 + i] = pointDatas[i] * 2 / cw - 1;
+              aposData[6 * 3 + i + 1] = pointDatas[i + 1] * 2 / ch - 1;
+            }
+            for (let i = 0, { length } = pointDatas; i < length; i = i + 3) {
+              for (let j = i + 3; j < length; j = j + 3) {
+                const dx = Math.abs(pointDatas[i] - pointDatas[j]);
+                const dy = Math.abs(pointDatas[i + 1] - pointDatas[j + 1]);
+                const d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+
+                let alpha = d <= 300 ? 0.3 - ((0.3 * d) / 200) : 0;
+                if (alpha <= 0) {
+                  continue;
+                }
+
+                aposData[count + 0] = aposData[6 * 3 + i];
+                aposData[count + 1] = aposData[6 * 3 + i + 1];
+                aposData[count + 2] = alpha;
+                aposData[count + 3] = aposData[6 * 3 + j];
+                aposData[count + 4] = aposData[6 * 3 + j + 1];
+                aposData[count + 5] = alpha;
+                count += 6;
+              }
+            }
+
+            requestAnimationFrame(draw);
+            gl.uniform1f(timeUniform, ((Math.sin(Math.PI * 2 * Date.now() / params.backgroundDuration - Math.PI / 2) + 1) / 2));
+            gl.bufferData(gl.ARRAY_BUFFER, aposData.subarray(0, count), gl.STATIC_DRAW);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.drawArrays(gl.LINES, 6 + nodeCount, (count - initCount) / 3);
+            gl.drawArrays(gl.POINTS, 6, nodeCount);
+
+            dt = Date.now() - t0;
+            t0 = Date.now();
           }
-          aposData[6 * 3 + i] = pointDatas[i] * 2 / cw - 1;
-          aposData[6 * 3 + i + 1] = pointDatas[i + 1] * 2 / ch - 1;
-        }
-        for (let i = 0, { length } = pointDatas; i < length; i = i + 3) {
-          for (let j = i + 3; j < length; j = j + 3) {
-            const dx = Math.abs(pointDatas[i] - pointDatas[j]);
-            const dy = Math.abs(pointDatas[i + 1] - pointDatas[j + 1]);
-            const d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-
-            let alpha = d <= 300 ? 0.3 - ((0.3 * d) / 200) : 0;
-
-						aposData[count + 0] = aposData[6 * 3 + i];
-						aposData[count + 1] = aposData[6 * 3 + i + 1];
-            aposData[count + 2] = alpha;
-						aposData[count + 3] = aposData[6 * 3 + j];
-						aposData[count + 4] = aposData[6 * 3 + j + 1];
-            aposData[count + 5] = alpha;
-						count += 6;
-          }
-        }
-        console.log((count - initCount) / 6,count )
-
-        requestAnimationFrame(draw);
-        gl.uniform1f(timeUniform, ((Math.sin(Math.PI * 2 * Date.now() / 4000 - Math.PI / 2) + 1) / 2));
-        gl.bufferData(gl.ARRAY_BUFFER, aposData.subarray(0, count), gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        gl.drawArrays(gl.LINES, 6 + nodeCount, (count - initCount) / 6);
-        gl.drawArrays(gl.POINTS, 6, nodeCount);
-
-        dt = Date.now() - t0;
-				t0 = Date.now();
+        })
       }
     </script>
   </body>
