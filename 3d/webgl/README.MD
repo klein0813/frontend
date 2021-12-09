@@ -1,7 +1,7 @@
 # WebGL
 
 - 简述
-
+  - WebGL的本质 —— JavaScript操作OpenGL接口
   - WebGL 引入了一个与 OpenGL ES 2.0 非常一致的 API
   - WebGL 2 API 引入了对大部分的 OpenGL ES 3.0 功能集的支持
 
