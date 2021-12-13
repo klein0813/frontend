@@ -134,211 +134,246 @@
   - 标准化设备坐标接着会变换为屏幕空间坐标(Screen-space Coordinates)，这是使用你通过glViewport函数提供的数据，进行视口变换(Viewport Transform)完成的。所得的屏幕空间坐标又会被变换为片段输入到片段着色器中
 - 深度：可以理解为z坐标，它代表一个像素在空间中和你的距离，如果离你远就可能被别的像素遮挡，你就看不到它了，它会被丢弃，以节省资源
 - 视口(Viewport)：渲染窗口的尺寸大小
+- 顶点数组对象(Vertex Array Object，VAO)：可以像顶点缓冲对象那样被绑定，任何随后的顶点属性调用都会储存在这个VAO中。这样的好处就是，当配置顶点属性指针时，你只需要将那些调用执行一次，之后再绘制物体的时候只需要绑定相应的VAO就行了。这使在不同顶点数据和属性配置之间切换变得非常简单，只需要绑定不同的VAO就行了。刚刚设置的所有状态都将存储在VAO中
+  - OpenGL的核心模式要求我们使用VAO，所以它知道该如何处理我们的顶点输入。如果我们绑定VAO失败，OpenGL会拒绝绘制任何东西。
 
 ### 简易流程
 
-- 使用glGenBuffers函数和一个缓冲ID生成一个VBO对象
-- 使用glBindBuffer函数把新创建的缓冲绑定到GL_ARRAY_BUFFER目标
-  - 顶点缓冲对象的缓冲类型是GL_ARRAY_BUFFER，OpenGL允许我们同时绑定多个缓冲，只要它们是不同的缓冲类型
-- 调用glBufferData函数，它会把之前定义的顶点数据复制到缓冲的内存中
+- 环境准备
+  - glfw 初始化
+  - glfw 设置 opengl 主次版本、启用核心模式等
+  - glfw 创建窗口(并设置窗口变化时的视口调整回调函数)
+  - gladLoadGLLoader，管理OpenGL的函数指针
+- 绘制前准备
+  - 创建着色器及程序对象
+  - 链接程序后删除着色器对象
+  - 使用glGenVertexArrays创建一个VAO
+  - 使用glGenBuffers函数和一个缓冲ID生成一个VBO对象
+  - 使用glBindVertexArray绑定VAO(需要放在`设置顶点属性指针`之前)
+  - 使用glBindBuffer函数把新创建的缓冲绑定到GL_ARRAY_BUFFER目标
+    - 顶点缓冲对象的缓冲类型是GL_ARRAY_BUFFER，OpenGL允许我们同时绑定多个缓冲，只要它们是不同的缓冲类型
+  - 调用glBufferData函数，它会把之前定义的顶点数据复制到缓冲的内存中
+  - glVertexAttribPointer 设置顶点属性指针
+  - glEnableVertexAttribArray 启用顶点属性（此时数据已链接顶点属性）
+  - 取消ARRAY_BUFFER的绑定
+  - 取消 VAO 的绑定
+- 窗口绘制
+  - 清屏
+  - 使用程序对象
+  - 绑定 VAO
+  - 绘制
+  - 窗口相关
+    - 交换窗口前后缓冲
+    - 查看触发的事件
+- 结束绘制
+  - 清除 VAO
+  - 清除 VBO
+  - 删除 程序对象
+  - 释放窗口资源
 
 ### Example
 
 ```cpp
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
+using namespace std;
 
-// settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+void frame_buffer_size_callback (GLFWwindow* window, int width, int height);
+void processInput (GLFWwindow* window);
 
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-const char *fragmentShaderSource = "#version 330 core\n"
+/*
+ * 330: OpenGL3.3
+ * core: 核心模式
+ * layout (location = 0): 设定了输入变量的位置值(Location)
+ * in: TODO
+*/
+const char* vertexShaderSource = "#version 330 core\n"
+  "layout (location = 0) in vec3 aPos;\n"
+  "void main()\n"
+  "{\n"
+  "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+  "}\0";
+const char* fragShaderSource = "#version 330 core\n"
     "out vec4 FragColor;\n"
     "void main()\n"
     "{\n"
     "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n\0";
 
-int main()
-{
-    // glfw: initialize and configure
-    // ------------------------------
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // OpenGL 主版本号
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // OpenGL 次版本号
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 使用核心模式(Core-profile) 
+int main () {
+  // glfw: initialize and configure
+  // ------------------------------
+  glfwInit(); // 初始化 glfw
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // openGL 主版本号
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // openGL 次版本号
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 使用核心模式
 
-#ifdef __APPLE__ // 如果使用的是Mac OS X系统
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+// 如果使用的是Mac OS X系统
+#ifdef __APPLE__
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // glfw window creation
-    // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    // 每当窗口调整大小时回调
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  // glfw window creation
+  // --------------------
+  // 创建窗口，失败时返回 NULL
+  GLFWwindow* window = glfwCreateWindow(800, 600, "CreateGLFWWindow", NULL, NULL);
+  if (!window) {
+    cout<<"Failed to create GLFWwindow."<<endl;
+    return -1;
+  }
+  glfwMakeContextCurrent(window);
+  // 窗口调整大小时，回调
+  glfwSetFramebufferSizeCallback(window, frame_buffer_size_callback);
 
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
-    // glfwGetProcAddress，根据我们编译的系统定义了正确的函数
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
-
-
-    // build and compile our shader program
-    // ------------------------------------
-    // vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // link shaders
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    // check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
-    }; 
-
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0); 
-
-
-    // uncomment this call to draw in wireframe polygons.
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // render loop
-    // -----------
-    // glfwWindowShouldClose函数在循环前检查GLFW是否被要求退出，若是则该函数返回true
-    while (!glfwWindowShouldClose(window))
-    {
-        // input
-        // -----
-        processInput(window);
-
-        // render
-        // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw our first triangle
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        // glBindVertexArray(0); // no need to unbind it every time 
-
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
-        // glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
-        /*
-        *  应用程序使用单缓冲绘图时可能会存在图像闪烁的问题。 这是因为生成的图像不是一下子被绘制出来的，而是按照从左到右，由上而下逐像素地绘制而成的。
-        *  最终图像不是在瞬间显示给用户，而是通过一步一步生成的，这会导致渲染的结果很不真实
-        *  双缓冲(Double Buffer): 前缓冲保存着最终输出的图像，它会在屏幕上显示；而所有的的渲染指令都会在后缓冲上绘制。当所有的渲染指令执行完毕后，
-        *  我们交换(Swap)前缓冲和后缓冲
-        */
-        glfwSwapBuffers(window);
-        // glfwPollEvents 函数检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数（可以通过回调方法手动设置）
-        glfwPollEvents();
-    }
-
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
-    // 释放/删除之前的分配的所有资源
+  // glad: load all OpenGL function pointers
+  // ---------------------------------------
+  // GLAD是用来管理OpenGL的函数指针
+  // GLFW给的是glfwGetProcAddress，它根据编译的系统定义了正确的函数
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    cout<<"Failed to initialize GLAD"<<endl;
     glfwTerminate();
-    return 0;
+    return -1;
+  }
+
+  // build and compile our shader program
+  // ------------------------------------
+  // vertex shader
+  unsigned int vertexShader;
+  // 创建一个顶点着色器
+  vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  // 把要编译的着色器对象作为第一个参数。第二参数指定了传递的源码字符串数量，这里只有一个。第三个参数是顶点着色器真正的源码，第四个参数先设置为NULL
+  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+  glCompileShader(vertexShader);
+  // check for shader compile errors
+  int success;
+  char infoLog[512];
+  glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+  // 如果编译失败，我们会用glGetShaderInfoLog获取错误消息
+  if (!success) {
+    glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+    cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << endl;
+    return -1;
+  }
+  // fragment shader
+  unsigned int fragmentShader;
+  fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragmentShader, 1, &fragShaderSource, NULL);
+  glCompileShader(fragmentShader);
+  glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+    cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << endl;
+    return -1;
+  }
+  // program
+  // 创建一个程序，并返回新创建程序对象的ID引用
+  unsigned int shaderProgram;
+  shaderProgram = glCreateProgram();
+  glAttachShader(shaderProgram, vertexShader);
+  glAttachShader(shaderProgram, fragmentShader);
+  glLinkProgram(shaderProgram);
+  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+    cout << "ERROR::PROGRAM::LINK FAILED."<< endl;
+    return -1;
+  }
+  glDeleteShader(vertexShader);
+  glDeleteShader(fragmentShader);
+
+  // set up vertex data (and buffer(s)) and configure vertex attributes
+  // ------------------------------------------------------------------
+  float vertices[] = {
+    -0.5f, -0.5f, 0.0f,
+    0.5f, -0.5f, 0.0f,
+    0.0f, 0.5f, 0.0f
+  };
+
+  // 0. 复制顶点数组到缓冲中供OpenGL使用
+  unsigned int VBO;
+  // 使用glGenBuffers函数和一个缓冲ID生成一个VBO对象
+  glGenBuffers(1, &VBO);
+  // 把新创建的缓冲绑定到GL_ARRAY_BUFFER目标
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // OpenGL的核心模式要求我们使用VAO，所以它知道该如何处理我们的顶点输入。如果我们绑定VAO失败，OpenGL会拒绝绘制任何东西
+  unsigned int VAO;
+  // 1. 绑定VAO
+  glGenVertexArrays(1, &VAO);
+  glBindVertexArray(VAO);
+  // 1. 设置顶点属性指针
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+
+  // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+  // 解除当前 ARRAY_BUFFER 的绑定
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+  // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+  // 取消 VAO 的绑定
+  glBindVertexArray(0);
+
+  // 每次循环前检查一次GLFW是否被要求退出，如果是的话该函数返回true
+  while (!glfwWindowShouldClose(window)) {
+    processInput(window);
+
+    // 渲染指令
+    // ...
+    // 设置清空屏幕所用的颜色（状态设置）
+    glClearColor(.2f, .3f, .3f, 1.0f);
+    // 当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色（状态使用）
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    /* 第一个参数指定配置的顶点属性：`layout(location = 0)`
+     * 第二个参数指定顶点属性的大小
+     * 第三个参数指定数据的类型
+     * 下个参数定义我们是否希望数据被标准化(Normalize)
+     * 第五个参数叫做步长(Stride)，它告诉我们在连续的顶点属性组之间的间隔
+     * 最后一个参数的类型是void*
+    */
+    // 2. 当我们渲染一个物体时要使用着色器程序
+    glUseProgram(shaderProgram);
+    glBindVertexArray(VAO);
+    // 3. 绘制物体
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // 前缓冲保存着最终输出的图像，它会在屏幕上显示；而所有的的渲染指令都会在后缓冲上绘制
+    // 所有的渲染指令执行完毕后，交换(Swap)前缓冲和后缓冲，图像就立即呈显出来，不真实感就消除了
+    glfwSwapBuffers(window);
+    // 查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数（可以通过回调方法手动设置）
+    glfwPollEvents();
+  }
+
+  // optional: de-allocate all resources once they've outlived their purpose:
+  // ------------------------------------------------------------------------
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteProgram(shaderProgram);
+  // 正确释放/删除之前的分配的所有资源
+  glfwTerminate();
+
+  return 1;
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+void frame_buffer_size_callback (GLFWwindow* window, int width, int height) {
+  // 调整视口
+  // make sure the viewport matches the new window dimensions; note that width and 
+  // height will be significantly larger than specified on retina displays.
+  glViewport(0, 0, width, height);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    // make sure the viewport matches the new window dimensions; note that width and 
-    // height will be significantly larger than specified on retina displays.
-    glViewport(0, 0, width, height);
+void processInput (GLFWwindow* window) {
+  // 如果没有按下，glfwGetKey将会返回GLFW_RELEASE
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, true);
+  }
 }
 ```
 
