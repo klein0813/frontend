@@ -1,0 +1,36 @@
+<?xml version="1.0" standalone="no"?>
+<svg width="200" height="250" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="30" height="30"/>
+  <rect x="60" y="10" rx="2" ry="10" width="20" height="30"/>
+  <circle cx="100" cy="25" r="15" />
+  <ellipse rx="20" ry="10" cx="140" cy="25" />
+  <line x1="170" y1="0" x2="200" y2="30" stroke="black" stroke-width="1" />
+  <polyline points="0 0, 10 10, 10 0, 20 10, 30 0, 40 10, 50 0, 60 10, 70 0, 80 10" fill="transparent" stroke="black" stroke-width="1" />
+  <polygon points="0 50, 10 60, 10 50, 20 60, 30 50, 40 60, 50 50, 60 60, 70 50, 80 60" fill="transparent" stroke="black" stroke-width="1" />
+  <path d="M 10 80 H 30 V 100 H 10 L 10 80" fill="gray" />
+  <circle cx="10" cy="80" r="1" fill="red" />
+  <circle cx="30" cy="80" r="1" fill="red" />
+  <circle cx="30" cy="100" r="1" fill="red" />
+  <circle cx="10" cy="100" r="1" fill="red" />
+  <path d="m 40 80 h 20 v 20 h -20 z"  fill="transparent" stroke="black" />
+  <path d="M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80" stroke="black" fill="transparent"/>
+  <path d="M10 80 Q 52.5 10, 95 80 T 170 80" stroke="black" fill="transparent"/>
+  <path d="M 10 75 Q 50 10 100 75 T 190 75" stroke="black" stroke-linecap="round" stroke-dasharray="5,10,5" fill="none"/>
+  <path d="M 10 75 L 190 75" stroke="red" stroke-linecap="round" stroke-width="1" stroke-dasharray="5,5" fill="none"/>
+  
+  <defs>
+    <style type="text/css">
+      <![CDATA[
+        #MyRect {
+          stroke: black;
+          fill: red;
+        }
+        #MyRect:hover {
+          stroke: black;
+          fill: blue;
+        }
+      ]]>
+    </style>
+  </defs>
+  <rect x="10" height="180" y="10" width="180" id="MyRect"/>
+</svg>
