@@ -12,3 +12,8 @@
 - Ellipse: 椭圆
 - Polyline: 折线
 - Polygon: 多边形
+
+## Search Engine(搜索引擎)
+
+- SEO(Search Engine Optimization): 搜索引擎优化
+- SEM(Search Engine Marketing): 搜索引擎营销
